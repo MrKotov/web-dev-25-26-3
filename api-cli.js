@@ -2,46 +2,19 @@
 
 const BASE_URL = "http://localhost:3000/api";
 
-// Example JSON data embedded in the script
+// Example JSON data - single objects that users can replace
 const exampleData = {
-    universities: [
-        {
-            id: 1,
-            name: "Tech University",
-            location: "Boston"
-        },
-        {
-            id: 2,
-            name: "State University",
-            location: "New York"
-        }
-    ],
-    students: [
-        {
-            id: 1,
-            facultyNumber: "FN001",
-            firstName: "John",
-            middleName: "Michael",
-            lastName: "Doe",
-            universityId: 1
-        },
-        {
-            id: 2,
-            facultyNumber: "FN002",
-            firstName: "Jane",
-            middleName: null,
-            lastName: "Smith",
-            universityId: 1
-        },
-        {
-            id: 3,
-            facultyNumber: "FN003",
-            firstName: "Bob",
-            middleName: "David",
-            lastName: "Johnson",
-            universityId: 2
-        }
-    ]
+    university: {
+        name: "Tech University",
+        location: "Boston"
+    },
+    student: {
+        facultyNumber: "FN001",
+        firstName: "John",
+        middleName: "Michael",
+        lastName: "Doe",
+        universityId: 4
+    }
 };
 
 function showHelp() {
@@ -51,7 +24,7 @@ function showHelp() {
 ╚════════════════════════════════════════════════════════════════╝
 
 USAGE:
-  node api-cli.js <endpoint> <method>
+  node api-cli.js <endpoint> <method> [id]
 
 ENDPOINTS:
   universities        Work with universities
@@ -60,18 +33,21 @@ ENDPOINTS:
 METHODS:
   get                 GET request (list all or by ID)
   post                POST request (create new)
-  put                 PUT request (update existing)
+  put                 PUT request (update by ID)
   delete              DELETE request (delete by ID)
 
 EXAMPLES:
-  node api-cli.js universities get
-  node api-cli.js universities post
-  node api-cli.js universities put
-  node api-cli.js universities delete
-  node api-cli.js students get
-  node api-cli.js students post
-  node api-cli.js students put
-  node api-cli.js students delete
+  node api-cli.js universities get           # Get all universities
+  node api-cli.js universities get 1         # Get university with ID 1
+  node api-cli.js universities post          # Create a new university
+  node api-cli.js universities put 1         # Update university with ID 1
+  node api-cli.js universities delete 1      # Delete university with ID 1
+  
+  node api-cli.js students get               # Get all students
+  node api-cli.js students get 2             # Get student with ID 2
+  node api-cli.js students post              # Create a new student
+  node api-cli.js students put 2             # Update student with ID 2
+  node api-cli.js students delete 2          # Delete student with ID 2
 
 EXAMPLE DATA:
 ${JSON.stringify(exampleData, null, 2)}
@@ -110,7 +86,7 @@ function formatOutput(endpoint, method, status, data) {
     console.log("═".repeat(60) + "\n");
 }
 
-async function handleEndpoint(endpoint, method) {
+async function handleEndpoint(endpoint, method, id) {
     endpoint = endpoint.toLowerCase();
     method = method.toLowerCase();
 
@@ -131,22 +107,33 @@ async function handleEndpoint(endpoint, method) {
     let endpoint_path = `/${endpoint}`;
     let data = null;
 
+    // Build the endpoint path with id if provided
+    if (id) {
+        endpoint_path += `/${id}`;
+    }
+
     switch (method) {
         case "post":
             data = endpoint === "universities"
-                ? exampleData.universities[0]
-                : exampleData.students[0];
+                ? exampleData.university
+                : exampleData.student;
             break;
 
         case "put":
+            if (!id) {
+                console.error("❌ Error: id is required for PUT method");
+                process.exit(1);
+            }
             data = endpoint === "universities"
-                ? exampleData.universities[0]
-                : exampleData.students[0];
-            endpoint_path += "/1";
+                ? exampleData.university
+                : exampleData.student;
             break;
 
         case "delete":
-            endpoint_path += "/1";
+            if (!id) {
+                console.error("❌ Error: id is required for DELETE method");
+                process.exit(1);
+            }
             break;
     }
 
@@ -167,6 +154,7 @@ async function main() {
 
     const endpoint = args[0];
     const method = args[1];
+    const id = args[2];
 
     if (!endpoint || !method) {
         console.error("❌ Error: endpoint and method arguments are required\n");
@@ -175,7 +163,7 @@ async function main() {
     }
 
     try {
-        await handleEndpoint(endpoint, method);
+        await handleEndpoint(endpoint, method, id);
     } catch (error) {
         console.error(`❌ Error: ${error.message}`);
         process.exit(1);
